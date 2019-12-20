@@ -133,6 +133,7 @@ var parameter_data;
 var parameter_start_sample_index;
 var word_counter;
 var commands = [];
+var register_names = {}; // 2d dict of code:reg_number:name, where name is string
 var frame_counter;
 var frame,frames;
 var payload_counter = 0;
@@ -275,6 +276,11 @@ function parse_spi_items(item)
 
               // Add root packet view, with content being first parameter value
               if (cmd_par_counter == 1) {
+                  // If its a "register" (1st param has name), get name of it
+                  reg_desc = fetch_register_description(cmd_descriptor[0].code, parameter_data);
+                  if (reg_desc != "") {
+                    formatted_parameter = reg_desc + " (" + formatted_parameter + ")";
+                  }
                   ScanaStudio.packet_view_add_packet(true,ch_mosi,cmd_start_index,item.end_sample_index,
                                                      cmd_descriptor[0].long_caption, // Use long caption as title, lots of space
                                                      formatted_parameter,
@@ -582,6 +588,17 @@ function fetch_command_description(h)
     }
   }
   return unknown_transaction;
+}
+
+
+function fetch_register_description(code, reg)
+{
+  if (code in register_names) {
+      if (reg in register_names[code]) { // If this is a valid register for this command code
+        return register_names[code][reg];
+      }
+  }
+  return ""; // No description
 }
 
 function build_commands_db_nor()
@@ -913,12 +930,25 @@ function build_commands_db_nand()
   transaction.push(new parameter_t(1,IO_MISO,"D","Data",flash_format_data));
   commands.push(transaction);
 
+  register_names[0x0F] = {
+    0xA0 : "Block Lock",
+    0xB0 : "Configuration",
+    0xC0 : "Status",
+    0xD0 : "Die select"
+  }
+
   transaction = [];
   transaction.push(new header_t(0x1F,"SF","Set Features",NO_PAYLOAD));
   transaction.push(new parameter_t(1,IO_MOSI,"R","Register",flash_format_address));
   transaction.push(new parameter_t(1,IO_MOSI,"D","Data",flash_format_data));
   commands.push(transaction);
 
+  register_names[0x1F] = {
+    0xA0 : "Block Lock",
+    0xB0 : "Configuration",
+    0xC0 : "Status",        // TODO: Read only!
+    0xD0 : "Die select"
+  }
   //-------------- Protect Operation
   transaction = [];
   transaction.push(new header_t(0x2C,"PT","Protect",NO_PAYLOAD));
