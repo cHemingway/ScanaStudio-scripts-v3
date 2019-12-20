@@ -283,7 +283,7 @@ function parse_spi_items(item)
                   }
                   ScanaStudio.packet_view_add_packet(true,ch_mosi,cmd_start_index,item.end_sample_index,
                                                      cmd_descriptor[0].long_caption, // Use long caption as title, lots of space
-                                                     formatted_parameter,
+                                                     cmd_descriptor[cmd_par_counter].long_caption   + ": "  + formatted_parameter,
                                                      ScanaStudio.PacketColors.Head.Title,ScanaStudio.PacketColors.Head.Content)
               } else if (cmd_par_counter > 1) {
                   // For remaining parameters, add child
@@ -888,12 +888,12 @@ function build_commands_db_nand()
 
   transaction = [];
   transaction.push(new header_t(0x13,"PR","Page Read",ch_miso,NO_PAYLOAD));
-  transaction.push(new parameter_t(3,IO_MOSI,"A","3 Address bytes",flash_format_address));
+  transaction.push(new parameter_t(3,IO_MOSI,"A","Page",flash_format_address));
   commands.push(transaction);
 
   transaction = [];
   transaction.push(new header_t(0x03,"RD","Read Cache x1",ch_miso,IO_MISO));
-  transaction.push(new parameter_t(2,IO_MOSI,"A","Column Address",flash_format_address));
+  transaction.push(new parameter_t(2,IO_MOSI,"A","Column",flash_format_address));
   transaction.push(new parameter_t(1,IO_MISO,"Dummy","1 Dummy byte",flash_format_data));
   commands.push(transaction);
 
@@ -902,24 +902,24 @@ function build_commands_db_nand()
 
   transaction = [];
   transaction.push(new header_t(0x02,"PL","Program Load x1",IO_MOSI));
-  transaction.push(new parameter_t(2,IO_MOSI,"A","Column Address",flash_format_address));
+  transaction.push(new parameter_t(2,IO_MOSI,"A","Column",flash_format_address));
   commands.push(transaction);
 
   transaction = [];
   transaction.push(new header_t(0x10,"PE","Program Execute",NO_PAYLOAD));
-  transaction.push(new parameter_t(3,IO_MOSI,"A","3 Address bytes",flash_format_address));
+  transaction.push(new parameter_t(3,IO_MOSI,"A","Page",flash_format_address));
   commands.push(transaction);
 
   transaction = [];
   transaction.push(new header_t(0x84,"PLR","Program Load Random",IO_MOSI));
-  transaction.push(new parameter_t(2,IO_MOSI,"A","Column Address",flash_format_address));
+  transaction.push(new parameter_t(2,IO_MOSI,"A","Column",flash_format_address));
   commands.push(transaction);
 
   //-------------- Block Erase Operations
 
   transaction = [];
   transaction.push(new header_t(0xD8,"BE","Block Erase",NO_PAYLOAD));
-  transaction.push(new parameter_t(3,IO_MOSI,"A","3 Address bytes",flash_format_address));
+  transaction.push(new parameter_t(3,IO_MOSI,"A","Page",flash_format_address));
   commands.push(transaction);
 
   //-------------- Features Operations
@@ -952,7 +952,7 @@ function build_commands_db_nand()
   //-------------- Protect Operation
   transaction = [];
   transaction.push(new header_t(0x2C,"PT","Protect",NO_PAYLOAD));
-  transaction.push(new parameter_t(3,IO_MOSI,"A","Page/Block Address",flash_format_data));
+  transaction.push(new parameter_t(3,IO_MOSI,"A","Page",flash_format_data));
   commands.push(transaction);
 
 
@@ -960,46 +960,46 @@ function build_commands_db_nand()
 
   transaction = [];
   transaction.push(new header_t(0x3B,"RCx2","Read Cache x2",IO_DUAL));
-  transaction.push(new parameter_t(2,IO_MOSI,"A","Column Address",flash_format_address));
+  transaction.push(new parameter_t(2,IO_MOSI,"A","Column",flash_format_address));
   transaction.push(new parameter_t(1,IO_MOSI,"Dummy","1 Dummy byte",flash_format_data));
   commands.push(transaction);
 
   transaction = [];
   transaction.push(new header_t(0x6B,"RCx4","Read Cache x4",IO_QUAD));
-  transaction.push(new parameter_t(2,IO_MOSI,"A","Column Address",flash_format_address));
+  transaction.push(new parameter_t(2,IO_MOSI,"A","Column",flash_format_address));
   transaction.push(new parameter_t(4,IO_MOSI,"Dummy","4 Dummy bytes",flash_format_data));
   commands.push(transaction);
 
   transaction = [];
   transaction.push(new header_t(0xBB,"RC2IO","Read Cache dual I/O",IO_DUAL));
-  transaction.push(new parameter_t(2,IO_DUAL,"A","Column Address",flash_format_address));
+  transaction.push(new parameter_t(2,IO_DUAL,"A","Column",flash_format_address));
   transaction.push(new parameter_t(1,IO_DUAL,"Dummy","1 Dummy byte",flash_format_data)); // 4 cycles, over 2 lanes, so 1 byte
   commands.push(transaction);
 
   transaction = [];
   transaction.push(new header_t(0xEB,"RC4IO","Read Cache quad I/O",IO_QUAD));
-  transaction.push(new parameter_t(2,IO_QUAD,"A","Column Address",flash_format_address));
+  transaction.push(new parameter_t(2,IO_QUAD,"A","Column",flash_format_address));
   transaction.push(new parameter_t(2,IO_QUAD,"Dummy","2 Dummy bytes",flash_format_data));
   commands.push(transaction);
 
   transaction = [];
   transaction.push(new header_t(0xA2,"PLx2","Program Load x2",IO_DUAL));
-  transaction.push(new parameter_t(2,IO_MOSI,"A","Column Address",flash_format_address));
+  transaction.push(new parameter_t(2,IO_MOSI,"A","Column",flash_format_address));
   commands.push(transaction);
 
   transaction = [];
   transaction.push(new header_t(0x44,"PLRx2","Program Load Random x2",IO_DUAL));
-  transaction.push(new parameter_t(2,IO_MOSI,"A","Column Address",flash_format_address));
+  transaction.push(new parameter_t(2,IO_MOSI,"A","Column",flash_format_address));
   commands.push(transaction);
 
   transaction = [];
   transaction.push(new header_t(0x32,"PLx4","Program Load x4",IO_QUAD));
-  transaction.push(new parameter_t(2,IO_MOSI,"A","Column Address",flash_format_address));
+  transaction.push(new parameter_t(2,IO_MOSI,"A","Column",flash_format_address));
   commands.push(transaction);
 
   transaction = [];
   transaction.push(new header_t(0x34,"PRDx4","Program Load Random x4",IO_QUAD));
-  transaction.push(new parameter_t(2,IO_MOSI,"A","Column Address",flash_format_address));
+  transaction.push(new parameter_t(2,IO_MOSI,"A","Column",flash_format_address));
   commands.push(transaction);
 
 }
