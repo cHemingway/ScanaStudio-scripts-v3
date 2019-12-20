@@ -196,7 +196,7 @@ function parse_spi_items(item)
     if ((payload_counter != 0) && (cmd_descriptor != undefined)) {
       ScanaStudio.packet_view_add_packet(false,ch_mosi,payload_start_index,item.start_sample_index,
                                          IO_DESCRIPTION[cmd_descriptor[0].payload_mode], // Title is type of payload
-                                         payload_counter.toString() + "Bytes",  // Count bytes
+                                         payload_counter.toString() + " Bytes",  // Count bytes
                                          ScanaStudio.get_channel_color(cmd_descriptor[0].payload_channel),
                                          ScanaStudio.PacketColors.Data.Content);
 
@@ -281,16 +281,26 @@ function parse_spi_items(item)
                   if (reg_desc != "") {
                     formatted_parameter = reg_desc + " (" + formatted_parameter + ")";
                   }
+                  // Color packet based on payload type, MOSI or MISO
+                  // This is a quick way to get relevant coloring, without requiring each parameter to specify
+                  var title_color = ScanaStudio.PacketColors.Head.Title;
+                  if (cmd_descriptor[0].payload_mode != NO_PAYLOAD) {
+                    title_color = ScanaStudio.get_channel_color(cmd_descriptor[0].payload_channel);
+                  }
                   ScanaStudio.packet_view_add_packet(true,ch_mosi,cmd_start_index,item.end_sample_index,
                                                      cmd_descriptor[0].long_caption, // Use long caption as title, lots of space
                                                      cmd_descriptor[cmd_par_counter].long_caption   + ": "  + formatted_parameter,
-                                                     ScanaStudio.PacketColors.Head.Title,ScanaStudio.PacketColors.Head.Content)
+                                                     title_color,
+                                                     ScanaStudio.PacketColors.Head.Content)
               } else if (cmd_par_counter > 1) {
                   // For remaining parameters, add child
+                  // Color child parameters title from source channel
+                  var title_color = ScanaStudio.get_channel_color(cmd_descriptor[cmd_par_counter].source_channel);
                   ScanaStudio.packet_view_add_packet(false,ch_mosi,parameter_start_sample_index,item.end_sample_index,
                                                      cmd_descriptor[cmd_par_counter].long_caption, // Use long caption as title, lots of space
                                                      formatted_parameter,
-                                                     ScanaStudio.PacketColors.Preamble.Title,ScanaStudio.PacketColors.Preamble.Content)
+                                                     title_color,
+                                                     ScanaStudio.PacketColors.Head.Content)
               }
               cmd_par_counter++;
               if (cmd_par_counter >= cmd_descriptor.length)
