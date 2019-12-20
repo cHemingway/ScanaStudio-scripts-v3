@@ -113,6 +113,14 @@ var IO_DUAL = 2;
 var IO_QUAD = 3;
 var NO_PAYLOAD = -1;
 
+// User readable description for packet view
+var IO_DESCRIPTION = {};
+IO_DESCRIPTION[IO_MOSI] = "W MOSI";
+IO_DESCRIPTION[IO_MISO] = "R MISO";
+IO_DESCRIPTION[IO_DUAL] = "DUAL";
+IO_DESCRIPTION[IO_QUAD] = "QUAD";
+
+
 var TYPE_NOR = 0;
 var TYPE_NAND = 1;
 
@@ -127,7 +135,9 @@ var word_counter;
 var commands = [];
 var frame_counter;
 var frame,frames;
-var payload_counter;
+var payload_counter = 0;
+var cmd_start_index;
+var payload_start_index;
 
 function on_decode_signals(resume)
 {
@@ -180,6 +190,17 @@ function parse_spi_items(item)
     //At any moment, if a frame is interrupted (CS goes high),
     //then we should reset the state machine
     state_machine = 0;
+
+    // Add data payload object here as child, as when CS goes high payload finishes
+    if ((payload_counter != 0) && (cmd_descriptor != undefined)) {
+      ScanaStudio.packet_view_add_packet(false,ch_mosi,payload_start_index,item.start_sample_index,
+                                         IO_DESCRIPTION[cmd_descriptor[0].payload_mode], // Title is type of payload
+                                         payload_counter.toString() + "Bytes",  // Count bytes
+                                         ScanaStudio.get_channel_color(cmd_descriptor[0].payload_channel),
+                                         ScanaStudio.PacketColors.Data.Content);
+
+    }
+
   }
   //ScanaStudio.console_info_msg("STATE:"+state_machine);
   switch (state_machine) {
@@ -207,12 +228,20 @@ function parse_spi_items(item)
         ScanaStudio.dec_item_add_content(cmd_descriptor[0].short_caption+" ("+data_to_str(item.content,cmd_descriptor[0].format,8)+")");
         ScanaStudio.dec_item_add_content(data_to_str(item.content,cmd_descriptor[0].format,8));
         ScanaStudio.dec_item_end();
+        // Save start of command for packet view when we have end of it (parameters)
+        cmd_start_index = item.start_sample_index;
         if (cmd_descriptor.length > 1) //If there is at least one parameter
         {
             state_machine++;
         }
         else
         {
+          // No parameters, so add in packet view now. For commands like Reset, or Write Enable
+          ScanaStudio.packet_view_add_packet(true,ch_mosi,item.start_sample_index,item.end_sample_index,
+                                             cmd_descriptor[0].long_caption, // Use long caption as title, lots of space
+                                             "",  // No content, as no parameters
+                                             // Use Data color for no parameter value
+                                             ScanaStudio.PacketColors.Data.Title,ScanaStudio.PacketColors.Data.Content)
           state_machine = 0; //Wait for next frame
         }
       }
@@ -235,11 +264,28 @@ function parse_spi_items(item)
               {
                   cmd_par_counter--;
               }
+              // Format parameter using data_to_str to match requested format
+              var formatted_parameter = data_to_str(parameter_data,cmd_descriptor[cmd_par_counter].format,cmd_descriptor[cmd_par_counter].len*8);
+              // Add to decode view
               ScanaStudio.dec_item_new(item.channel_index,parameter_start_sample_index,item.end_sample_index);
-              ScanaStudio.dec_item_add_content(cmd_descriptor[cmd_par_counter].long_caption   + ": "  + data_to_str(parameter_data,cmd_descriptor[cmd_par_counter].format,cmd_descriptor[cmd_par_counter].len*8));
-              ScanaStudio.dec_item_add_content(cmd_descriptor[cmd_par_counter].short_caption  + ": "  + data_to_str(parameter_data,cmd_descriptor[cmd_par_counter].format,cmd_descriptor[cmd_par_counter].len*8));
-              ScanaStudio.dec_item_add_content(data_to_str(parameter_data,cmd_descriptor[cmd_par_counter].format,cmd_descriptor[cmd_par_counter].len*8));
+              ScanaStudio.dec_item_add_content(cmd_descriptor[cmd_par_counter].long_caption   + ": "  + formatted_parameter);
+              ScanaStudio.dec_item_add_content(cmd_descriptor[cmd_par_counter].short_caption  + ": "  + formatted_parameter);
+              ScanaStudio.dec_item_add_content(formatted_parameter);
               ScanaStudio.dec_item_end();
+
+              // Add root packet view, with content being first parameter value
+              if (cmd_par_counter == 1) {
+                  ScanaStudio.packet_view_add_packet(true,ch_mosi,cmd_start_index,item.end_sample_index,
+                                                     cmd_descriptor[0].long_caption, // Use long caption as title, lots of space
+                                                     formatted_parameter,
+                                                     ScanaStudio.PacketColors.Head.Title,ScanaStudio.PacketColors.Head.Content)
+              } else if (cmd_par_counter > 1) {
+                  // For remaining parameters, add child
+                  ScanaStudio.packet_view_add_packet(false,ch_mosi,parameter_start_sample_index,item.end_sample_index,
+                                                     cmd_descriptor[cmd_par_counter].long_caption, // Use long caption as title, lots of space
+                                                     formatted_parameter,
+                                                     ScanaStudio.PacketColors.Preamble.Title,ScanaStudio.PacketColors.Preamble.Content)
+              }
               cmd_par_counter++;
               if (cmd_par_counter >= cmd_descriptor.length)
               {
@@ -248,6 +294,7 @@ function parse_spi_items(item)
                 {
                   state_machine++; //Fetch payload data
                   payload_counter = 0; // Reset data byte number
+                  payload_start_index = item.end_sample_index; // Save for packet view at end of payload
                 }
                 else
                 {
