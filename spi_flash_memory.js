@@ -3,13 +3,14 @@
 <DESCRIPTION>
  SPI Flash memory transactions analyzer
 </DESCRIPTION>
-<VERSION> 0.3 </VERSION>
+<VERSION> 0.4 </VERSION>
 <AUTHOR_NAME>  Ibrahim KAMAL, Chris HEMINGWAY </AUTHOR_NAME>
 <AUTHOR_URL> i.kamal@ikalogic.com </AUTHOR_URL>
 <HELP_URL> https://github.com/ikalogic/ScanaStudio-scripts-v3/wiki/SPI-Flash-memory-instructions-analyzer </HELP_URL>
 <COPYRIGHT> Copyright Ibrahim KAMAL </COPYRIGHT>
 <LICENSE>  This code is distributed under the terms of the GNU General Public License GPLv3 </LICENSE>
 <RELEASE_NOTES>
+V0.4: Add packet view
 V0.3: Add selectable flash types, NAND flash, and option to enumerate data bytes
 V0.2: Added dec_item_end() for each dec_item_new().
 V0.1: Initial release.
